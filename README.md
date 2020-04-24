@@ -197,14 +197,7 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 ```
 
 ### Get Key
-`GET /keystore/key`
-
-#### Request
-```json
-{
-  "keyid": "string",
-}
-```
+`GET /keystore/key/{keyid}`
 
 #### Response
 ```json
@@ -231,14 +224,7 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 ```
 
 ### Load Key Pair
-`GET /keystore/keypair`
-
-#### Request
-```json
-{
-  "keypairid": "string",
-}
-```
+`GET /keystore/keypair/{keypairid}`
 
 #### Response
 ```json
@@ -329,7 +315,7 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 ```json
 {
   "certid": "string",
-  "pem": string
+  "pem": "string"
 }
 ```
 
