@@ -269,7 +269,6 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 
 
 
-
 ## CS
 
 ### Create Cert
@@ -279,6 +278,11 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 ```json
 {
   "certid": "string",
+  "issuername": "string",
+  "subjectname": "string",
+  "publickeyhandle": "string",
+  "effectivedate": "ISO-8601 string",
+  "expirationdate": "ISO-8601 string"
 }
 ```
 
@@ -290,19 +294,31 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 ```
 
 ### Load Cert
-`GET /certstore/cert`
-
-#### Request
-```json
-{
-  "certid": "string",
-}
-```
+`GET /certstore/cert/{certid}`
 
 #### Response
 ```json
 {
   "pem": "string"
+}
+```
+
+### Get Cert List
+`GET /certstore/cert`
+
+#### Response
+```json
+{
+  "certs": [
+    {
+        "certid": "string",
+        "issuername": "string",
+        "subjectname": "string",
+        "publickeyhandle": "string",
+        "effectivedate": "ISO-8601 string",
+        "expirationdate": "ISO-8601 string"
+    }
+  ]
 }
 ```
 
