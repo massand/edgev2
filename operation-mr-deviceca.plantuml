@@ -2,11 +2,12 @@
 
 
 participant MR
-participant EIS
+participant IS
 participant "openssl-engine-ks"
 participant KS
 participant CS
 participant Module
+participant Host_Module
 
 
 group Master encryption key
@@ -22,7 +23,6 @@ group Device CA
 	MR -> CS ++: create_or_load_cert("device_ca")
 	return OK(cert PEM)
 end
-
 
 group Workload CA
 	MR -> KS ++: create_key_pair_if_not_exists("workload_ca")
@@ -51,50 +51,59 @@ group Workload CA
 	end
 end
 
-
 group MR init
-	MR -> EIS ++: get_provisioning_info()
+	MR -> IS ++: get_provisioning_info()
 	return OK(provisioning info)
 
 	MR -> MR: Start modules
 	MR -> Module **
 end
 
-
 group Module things
 	group Module wants to encrypt a secret
 		Module -> MR ++: encrypt(plaintext)
-		MR -> EIS ++: encrypt(plaintext)
-		EIS -> EIS: Derive module ID plaintext
-		EIS -> KS ++: encrypt("master encryption key handle", module ID plaintext)
+		MR -> IS ++: encrypt(plaintext)
+		IS -> IS: Derive module ID plaintext
+		IS -> KS ++: encrypt("master encryption key handle", module ID plaintext)
 		return OK(module ID ciphertext)
-		EIS -> EIS: encrypt(plaintext, module ID ciphertext)
+		IS -> IS: encrypt(plaintext, module ID ciphertext)
 		return OK(ciphertext)
 		return OK(ciphertext)
 	end
 
 	group Module wants to sign (HMAC-SHA256) a digest
 		Module -> MR ++: sign(digest)
-		MR -> EIS ++: sign(digest)
-		EIS -> EIS: Derive module ID plaintext
-		EIS -> KS ++: encrypt("master encryption key handle", module ID plaintext)
+		MR -> IS ++: sign(digest)
+		IS -> IS: Derive module ID plaintext
+		IS -> KS ++: encrypt("master encryption key handle", module ID plaintext)
 		return OK(module ID ciphertext)
-		EIS -> EIS: sign(plaintext, module ID ciphertext)
+		IS -> IS: sign(plaintext, module ID ciphertext)
 		return OK(signature)
 		return OK(signature)
 	end
 
 	group Module wants a server cert
 		Module -> MR ++: Request server cert
-		MR -> EIS ++: Request server cert
-		EIS -> EIS: generate new privkey and CSR (in memory, not via openssl-engine-ks)
-		EIS -> "openssl-engine-ks" ++: openssl::X509_sign(CSR, workload_ca privkey openssl::EVP_PKEY)
+		MR -> IS ++: Request server cert
+		IS -> IS: generate new privkey and CSR (in memory, not via openssl-engine-ks)
+		IS -> "openssl-engine-ks" ++: openssl::X509_sign(CSR, workload_ca privkey openssl::EVP_PKEY)
 		"openssl-engine-ks" -> KS ++: sign("key handle", ...)
 		return OK(signature)
-		return OK(signed X509)
+		return OK(signed X509)	
 		return OK(privkey, server cert)
 		return OK(privkey, server cert)
 	end
+end
+
+group Host_Module API calls
+		Host_Module -> IS ++: get_identity()
+		return OK(identity)
+		Host_Module -> IS ++: sign(digest)
+		IS -> IS: Derive module ID plaintext
+		IS -> KS ++: encrypt("master encryption key handle", module ID plaintext)
+		return OK(module ID ciphertext)
+		IS -> IS: sign(plaintext, module ID ciphertext)
+		return OK(signature)
 end
 
 

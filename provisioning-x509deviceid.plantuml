@@ -2,7 +2,7 @@
 
 title Provisioning using X.509 device ID cert
 
-participant EIS
+participant IS
 participant "openssl-engine-ks"
 
 box KS
@@ -17,19 +17,19 @@ end box
 
 participant DPS
 
-EIS -> KS ++: load_key_pair("device_id")
+IS -> KS ++: load_key_pair("device_id")
 KS -> "libiothsm-keygen" ++: load_key_pair("device_id")
 return OK
 return OK("key handle")
-EIS -> "openssl-engine-ks" ++: load_private_key("key handle")
+IS -> "openssl-engine-ks" ++: load_private_key("key handle")
 return openssl::EVP_PKEY
 
-EIS -> CS ++: create_or_load_cert("device_id")
+IS -> CS ++: create_or_load_cert("device_id")
 CS -> "libiothsm-certgen" ++: create_or_load_cert("device_id")
 return OK(openssl::X509)
 return OK(cert PEM)
 
-EIS -> DPS ++: TLS client auth using privkeys's openssl::EVP_PKEY + openssl::X509 from cert PEM
+IS -> DPS ++: TLS client auth using privkeys's openssl::EVP_PKEY + openssl::X509 from cert PEM
 return Provisioning response
 
 @enduml

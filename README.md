@@ -1,6 +1,6 @@
 IoT Edge v2 is made up of several independent services instead of one monolithic `iotedged`
 
-- Edge Identity Service
+- Identity Service
 
     Handles provisioning.
 
@@ -22,7 +22,7 @@ IoT Edge v2 is made up of several independent services instead of one monolithic
 
 Each component talks to the other components over RPC of some sort (TODO: HTTP-over-UDS? gRPC-over-UDS? D-Bus? Something else?)
 
-
+The configuration / settings below are represented in YAML, but they will follow the settings file format for IS (i.e. TOML).
 
 # Provisioning
 
@@ -47,7 +47,7 @@ Each component talks to the other components over RPC of some sort (TODO: HTTP-o
     'preloaded_cert:device-id': '/var/secrets/device-id.cer'
     ```
 
-1. User configures EIS with provisioning info.
+1. User configures IS with provisioning info.
 
     ```yaml
     provisioning:
@@ -61,9 +61,9 @@ Each component talks to the other components over RPC of some sort (TODO: HTTP-o
         identity_pk: 'key://device-id'
     ```
 
-1. User starts KS, CS, EIS.
+1. User starts KS, CS, IS.
 
-1. EIS performs provisioning.
+1. IS performs provisioning.
 
     ![Provisioning using X.509 device ID cert](provisioning-x509deviceid.png)
     ![Internals of the TLS client auth](provisioning-x509deviceid-openssl.png)
@@ -135,11 +135,190 @@ Each component talks to the other components over RPC of some sort (TODO: HTTP-o
 
 # API surface
 
-## EIS
+## MR
+
+The iotedged REST APIs will preserve their spec, in order to remain backwards-compatible.
+
+
+
+## IS
+
+### Get IoT device provisioning result
+`GET /identities/aziot/device`
+
+#### Response (SAS case)
+```json
+{
+  "id": "aziot://myhub.net/device/device01",
+  "managedBy": "aziot://myhub.net/",
+  "auth": {
+    "type": "sas",
+    "keystorehandle": "string",
+  }
+}
+```
+#### Response (X.509 case)
+```json
+{
+  "id": "aziot://myhub.net/device/device01",
+  "managedBy": "aziot://myhub.net/",
+  "auth": {
+    "type": "x509",
+    "certstorehandle": "string",
+  }
+}
+```
+
+### Trigger IoT device reprovisioning flow
+`GET /identities/aziot/device/reprovision`
+
+#### Response
+```
+200 Ok
+```
 
 ## KS
 
+### Create Key
+`POST /keystore/key`
+
+#### Request
+```json
+{
+  "keyid": "string",
+}
+```
+
+#### Response
+```json
+{
+  "keystorehandle": "string"
+}
+```
+
+### Get Key
+`GET /keystore/key`
+
+#### Request
+```json
+{
+  "keyid": "string",
+}
+```
+
+#### Response
+```json
+{
+  "keystorehandle": "string"
+}
+```
+
+### Create Key Pair
+`POST /keystore/keypair`
+
+#### Request
+```json
+{
+  "keypairid": "string",
+}
+```
+
+#### Response
+```json
+{
+  "keystorehandle": "string"
+}
+```
+
+### Load Key Pair
+`GET /keystore/keypair`
+
+#### Request
+```json
+{
+  "keypairid": "string",
+}
+```
+
+#### Response
+```json
+{
+  "keystorehandle": "string"
+}
+```
+
+
+### Sign using Private Key
+`POST /keystore/sign`
+
+#### Request
+```json
+{
+  "keystorehandle": "string",
+  "algo": "HMACSHA256",
+  "data": "string"
+}
+```
+
+#### Response
+```json
+{
+  "digest": "string"
+}
+```
+
+
+
+
 ## CS
 
-## MR
+### Create Cert
+`POST /certstore/cert`
+
+#### Request
+```json
+{
+  "certid": "string",
+}
+```
+
+#### Response
+```json
+{
+  "pem": "string"
+}
+```
+
+### Load Cert
+`GET /certstore/cert`
+
+#### Request
+```json
+{
+  "certid": "string",
+}
+```
+
+#### Response
+```json
+{
+  "pem": "string"
+}
+```
+
+### Import Cert
+`GET /certstore/cert`
+
+#### Request
+```json
+{
+  "certid": "string",
+  "pem": string
+}
+```
+
+#### Response
+```
+200 Ok
+```
 
