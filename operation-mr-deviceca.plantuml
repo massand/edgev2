@@ -96,6 +96,7 @@ group Module things
 end
 
 group Host_Module API calls
+	group Host module wants to sign (HMAC-SHA256) a digest
 		Host_Module -> IS ++: get_identity()
 		return OK(identity)
 		Host_Module -> IS ++: sign(digest)
@@ -104,6 +105,7 @@ group Host_Module API calls
 		return OK(module ID ciphertext)
 		IS -> IS: sign(plaintext, module ID ciphertext)
 		return OK(signature)
+	end
 end
 
 

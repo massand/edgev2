@@ -22,8 +22,6 @@ IoT Edge v2 is made up of several independent services instead of one monolithic
 
 Each component talks to the other components over RPC of some sort (TODO: HTTP-over-UDS? gRPC-over-UDS? D-Bus? Something else?)
 
-The configuration / settings below are represented in YAML, but they will follow the settings file format for IS (i.e. TOML).
-
 # Provisioning
 
 ## X.509 device ID cert
@@ -32,38 +30,43 @@ The configuration / settings below are represented in YAML, but they will follow
 
 1. User configures KS to use PKCS#11 and preloads the device ID cert's privkey.
 
-    ```yaml
-    pkcs11_lib_path: '/usr/lib/softhsm.so'
-    pkcs11_base_slot: 'pkcs11:slot-id=0?pin-value=1234'
+    ```toml
+    [keystore.pkcs11]
+    "lib_path" = "/usr/lib/softhsm.so"
+    "base_slot" = "pkcs11:slot-id=0?pin-value=1234"
 
-    'preloaded_key:device-id': 'pkcs11:slot-id=0;object=device%20id?pin-value=1234'
+    [keystore.preloaded_key]
+    "device-id" = "pkcs11:slot-id=0;object=device%20id?pin-value=1234"
     ```
 
-1. User configures CS to preload the device ID cert.
+2. User configures CS to preload the device ID cert.
 
-    ```yaml
-    homedir_path: '/var/lib/iotedge/cs'
+    ```toml
+    [certstore]
+    "homedir_path" = "/var/lib/iotedge/cs"
 
-    'preloaded_cert:device-id': '/var/secrets/device-id.cer'
+    [certstore.preloaded_cert]
+    "device-id" = "/var/secrets/device-id.cer"
     ```
 
-1. User configures IS with provisioning info.
+3. User configures IS with provisioning info.
 
-    ```yaml
-    provisioning:
-      source: 'dps'
-      scope_id: '...'
-      attestation:
-        method: 'x509'
-        # TODO: If we decide certs and keys *must* come from KS and CS, then the URI is redundant and it could directly be the respective IDs.
-        # Otherwise using a URI allows the scheme to determine other options for the source, like file:// for files.
-        identity_cert: 'cert://device-id'
-        identity_pk: 'key://device-id'
+    ```toml
+    # TODO: If we decide certs and keys *must* come from KS and CS, then the URI is redundant and it could directly be the respective IDs.
+    # Otherwise using a URI allows the scheme to determine other options for the source, like file:// for files.
+    [provisioning]
+    "source" = "dps"
+    "scope_id" = "<ADD DPS SCOPE ID HERE>"
+
+    [provisioning.attestation]
+    "method" = "x509"
+    "identity_cert" = "cert://device-id"
+    "identity_pk" = "key://device-id"
     ```
 
-1. User starts KS, CS, IS.
+4. User starts KS, CS, IS.
 
-1. IS performs provisioning.
+5. IS performs provisioning.
 
     ![Provisioning using X.509 device ID cert](provisioning-x509deviceid.png)
     ![Internals of the TLS client auth](provisioning-x509deviceid-openssl.png)
@@ -77,18 +80,26 @@ The configuration / settings below are represented in YAML, but they will follow
 
 1. User configures KS to preload the device CA cert's privkey.
 
-    ```yaml
-    'preloaded_key:device-ca': 'pkcs11:slot-id=0;object=device%20ca?pin-value=1234'
+    ```toml
+    [keystore.preloaded_key]
+    "device-ca" = "pkcs11:slot-id=0;object=device%20ca?pin-value=1234"
+
+    [keystore.pkcs11]
+    "lib_path" = "/usr/lib/softhsm.so"
+    "base_slot" = "pkcs11:slot-id=0?pin-value=1234"
+
     ```
 
-1. User configures CS to preload the device ID cert and trusted CA cert.
+2. User configures CS to preload the device ID certificate and trusted CA cert.
 
-    ```yaml
-    'preloaded_cert:device-ca': '/var/secrets/device-ca.cer'
-    'preloaded_cert:trusted-ca': '/var/secrets/trusted-ca.cer'
+    ```toml
+    [certstore.preloaded_cert]
+    "device-ca" = "/var/secrets/device-ca.cer"
+    "trusted-ca" = "/var/secrets/trusted-ca.cer"
     ```
 
-1. User configures MR.
+
+3. User configures MR.
 
     ```yaml
     certificates:
@@ -118,17 +129,19 @@ The configuration / settings below are represented in YAML, but they will follow
       uri: 'unix:///var/run/docker.sock'
     ```
 
-1. User configures CS to preload the device ID cert.
+4. User configures CS to preload the device ID cert.
 
-    ```yaml
-    homedir_path: '/var/lib/iotedge/cs'
+    ```toml
+    [certstore]
+    "homedir_path" = "/var/lib/iotedge/cs"
 
-    'preloaded_cert:device-id': '/var/secrets/device-id.cer'
+    [certstore.preloaded_cert]
+    "device-id" = "/var/secrets/device-id.cer"
     ```
 
-1. User starts MR.
+5. User starts MR.
 
-1. MR does its work.
+6. MR does its work.
 
     ![MR operation](operation-mr-deviceca.png)
 
@@ -153,7 +166,7 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
   "managedBy": "aziot://myhub.net/",
   "auth": {
     "type": "sas",
-    "keystorehandle": "string",
+    "keyStoreHandle": "string",
   }
 }
 ```
@@ -164,7 +177,7 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
   "managedBy": "aziot://myhub.net/",
   "auth": {
     "type": "x509",
-    "certstorehandle": "string",
+    "certicateStoreHandle": "string",
   }
 }
 ```
@@ -180,34 +193,27 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 ## KS
 
 ### Create Key
-`POST /keystore/key`
-
-#### Request
-```json
-{
-  "keyid": "string",
-}
-```
+`PUT /key/{keyid}`
 
 #### Response
 ```json
 {
-  "keystorehandle": "string"
+  "keyStoreHandle": "string"
 }
 ```
 
 ### Get Key
-`GET /keystore/key/{keyid}`
+`GET /key/{keyid}`
 
 #### Response
 ```json
 {
-  "keystorehandle": "string"
+  "keyStoreHandle": "string"
 }
 ```
 
 ### Create Key Pair
-`POST /keystore/keypair`
+`POST /keypair`
 
 #### Request
 ```json
@@ -219,37 +225,42 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 #### Response
 ```json
 {
-  "keystorehandle": "string"
+  "keyStoreHandle": "string"
 }
 ```
 
 ### Load Key Pair
-`GET /keystore/keypair/{keypairid}`
+`GET /keypair/{keypairid}`
 
 #### Response
 ```json
 {
-  "keystorehandle": "string"
+  "keyStoreHandle": "string"
 }
 ```
 
-
 ### Sign using Private Key
-`POST /keystore/sign`
+`POST /sign`
 
 #### Request
 ```json
 {
-  "keystorehandle": "string",
-  "algo": "HMACSHA256",
-  "data": "string"
+  "keyStoreHandle": "string",
+  "signAlgorithm": "ECDSA/RSA_PKCS1/RSA_PSS",
+  "hashAlgorithm": "SHA1/SHA224/SHA256/SHA384/SHA512",
+  "signParameters": 
+  {
+      "maskGenerationFunction": "SHA1/SHA224/SHA256/SHA384/SHA512",
+      "saltLength": 20
+  },
+  "digest": "string"
 }
 ```
 
 #### Response
 ```json
 {
-  "digest": "string"
+  "signature": "string"
 }
 ```
 
@@ -257,18 +268,21 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 
 ## CS
 
-### Create Cert
-`POST /certstore/cert`
+### Create or Import Certificate
+`PUT /certificate/{certid}`
 
-#### Request
+#### Request to create certificate
 ```json
 {
-  "certid": "string",
   "issuername": "string",
-  "subjectname": "string",
-  "publickeyhandle": "string",
-  "effectivedate": "ISO-8601 string",
-  "expirationdate": "ISO-8601 string"
+  "csr": "base64-encoded-string"
+}
+```
+
+#### Request to import certificate
+```json
+{
+  "pem": "string"
 }
 ```
 
@@ -279,8 +293,8 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 }
 ```
 
-### Load Cert
-`GET /certstore/cert/{certid}`
+### Load Certificate
+`GET /certificate/{certid}`
 
 #### Response
 ```json
@@ -289,38 +303,17 @@ The iotedged REST APIs will preserve their spec, in order to remain backwards-co
 }
 ```
 
-### Get Cert List
-`GET /certstore/cert`
+### Get Certificate List
+`GET /certificate`
 
 #### Response
 ```json
 {
-  "certs": [
+  "certificates": [
     {
-        "certid": "string",
-        "issuername": "string",
-        "subjectname": "string",
-        "publickeyhandle": "string",
-        "effectivedate": "ISO-8601 string",
-        "expirationdate": "ISO-8601 string"
+        "pem": "string"
     }
   ]
 }
-```
-
-### Import Cert
-`GET /certstore/cert`
-
-#### Request
-```json
-{
-  "certid": "string",
-  "pem": "string"
-}
-```
-
-#### Response
-```
-200 Ok
 ```
 
